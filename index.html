@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<title>What's My District?</title>
+	<meta charset="utf-8" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	<link rel="stylesheet" href="//cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+	<link rel="stylesheet" href="leaflet.label.css" />
+	<link rel="stylesheet" href="Control.Geocoder.css" />
+
+	<script src="//cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+	<script src="districts.geojson"></script>
+	<script src='leaflet-pip.min.js'></script>
+	<script src='https://code.jquery.com/jquery-1.11.0.min.js'></script>
+	<script src="Control.Geocoder.js"></script>
+	<script src="Label.js"></script>
+
+	<style>
+		body {
+			padding: 0;
+			margin: 0;
+		}
+		html, body, #map { 
+			height: 100%;
+			width: 100%;
+		}
+		#title {
+			position:absolute;
+			width: 98.98%;
+			font-family: sans-serif;
+			font-size: 100%;
+			/*margin-left: 10%;
+			margin-top: 5%;*/
+			color: #fff;
+			background: #404040;
+			z-index: 999999;
+			opacity: .7;
+			filter:alpha(opacity=70);
+			padding:10px;
+		}
+
+		.locator {
+			background: url('locate.png'); 
+			background-color: #fff;
+			background-size: 20px 20px;
+			background-repeat: no-repeat;
+			background-position: center;
+			position:relative;
+			display: inline-block; 
+			box-shadow: 0 1px 7px rgba(0,0,0,0.65);
+			-webkit-border-radius: 4px;
+			        border-radius: 4px;
+			width: 26px;
+			height: 26px;
+		}
+
+		.leaflet-touch .locator {
+			background-size: 24px 24px;
+			box-shadow: none;
+			border: 2px solid rgba(0,0,0,0.2);
+			background-clip: padding-box;
+			width: 30px;
+			height: 30px;
+		}
+
+		.my-custom-control { 
+			background: url('wvc.png'); 
+			background-size: 75px 75px;
+			background-repeat: no-repeat;
+			background-position: center;
+			position:relative;
+			-webkit-transition: background-size 0.2s;
+			transition-timing-function: cubic-bezier(.05,1.2,.72,1.2);
+			display: inline-block; 
+			width: 100px; 
+			height: 100px;
+			color: #fff;
+		}
+		.my-custom-control:hover {
+	    	background-size: 100px;
+		}
+
+		.leaflet-top {
+			z-index: 500;
+		}
+		.leaflet-bottom {
+			z-index: 499;
+		}
+
+		/*show a larger image when you're on a big screen*/
+		@media screen and (min-width: 1200px) {
+		    .my-custom-control {
+		    	background-size: 150px 150px;
+		        width: 200px;
+		        height: 200px;
+		    }
+		    .my-custom-control:hover {
+	    		background-size: 160px;
+			}
+		}
+
+		.districtsarea {
+			position: absolute;
+			font-size: 14px;
+		}
+
+		
+	</style>
+</head>
+<body>
+	<div id="title">What's my District?</div>
+	<div id="map"></div>
+	<div id='state' class='state'></div>
+	<script>
+	var state = document.getElementById('state');
+	var map = L.map('map').setView([40.6812, -112.0070], 13);
+	var MyControl = L.Control.extend({
+		options: {
+  			position: 'bottomleft'
+    	},
+
+    	onAdd: function (map) {
+      // create the control container with a particular class name
+      // ** you can add the image to the div as a background image using css
+      	var imageLink = document.createElement('a');
+        imageLink.href = 'http://www.wvc-ut.gov';
+      	var container = L.DomUtil.create('div', 'my-custom-control');
+      	imageLink.appendChild(container);
+      // ... initialize other DOM elements, add listeners, etc.
+      	return imageLink;
+    	}
+	});
+
+	var newControl = L.Control.extend({
+		options: {
+			position: 'topright'
+		},
+		onAdd: function (map) {
+	      // create the control container with a particular class name
+	      // ** you can add the image to the div as a background image using css
+	      	var imageLink = document.createElement('a');
+	        imageLink.href = '#';
+	      	var locateDiv = L.DomUtil.create('div', 'locator');
+	      	imageLink.appendChild(locateDiv);
+	      // ... initialize other DOM elements, add listeners, etc.
+	      	return imageLink;
+    	}
+	})
+		
+
+	var states = L.geoJson(districts, {
+		onEachFeature: function(feature, layer) {
+			console.log(feature);
+
+			var newMarker = new L.marker(layer.getBounds().getCenter(), {opacity: 0.01});
+			newMarker.bindLabel(feature.properties.District, {
+				noHide: true,
+				className: "districtsarea",
+				offset: [0,0]
+			}).addTo(map);
+			/*var label = new L.Label();
+			label.setContent(feature.properties.District);
+			label.setLatLng(layer.getBounds().getCenter());
+			map.showLabel(label);*/
+		},
+		style: function(feature) {
+		    switch (feature.properties.District) {
+		        case 'Granger-Hunter': return {color: "#000000", fillColor: "red"};
+		        case 'Taylorsville-Bennion': return {color: "#000000", fillColor: "blue"};
+		        case 'Kearns': return {color: "#000000", fillColor: "purple"};
+		        case 'Magna': return {color: "#000000", fillColor: "green"};
+		        case 'Alliant': return {color: "#000000", fillColor: "orange"};
+		    }
+		}
+	}).addTo(map);
+
+	map.addControl(new MyControl());
+	var geocoder = L.Control.geocoder().addTo(map);
+	map.addControl(new newControl());
+	
+
+		L.tileLayer('http://{s}.tiles.mapbox.com/v4/{mapId}/{z}/{x}/{y}.png?access_token={token}', {
+			subdomains: ['a','b','c','d'],
+			mapId: 'wvcpw.433b443c',
+			token: 'pk.eyJ1Ijoid3ZjcHciLCJhIjoiNWE4MTVjMjFhZDZlZDY1ZGY4Y2YzNWUzOGRlZmIzOWQifQ.gKCcFkSs7nv03yiyqqBrcg',
+			maxZoom: 18,
+			attribution: '<a href="https://www.mapbox.com/about/maps/">Mapbox &copy; OpenStreetMap &copy</a>'
+		}).addTo(map);
+		
+		//L.control.zoom('bottomleft');
+		L.Browser.retina = true;
+		map.zoomControl.setPosition('topleft');
+
+		function onLocationFound(e) {
+			var radius = e.accuracy / 2;
+
+			var layer = leafletPip.pointInLayer(e.latlng, states, true);
+			if (layer.length == 0) {
+				L.marker(e.latlng).addTo(map)
+				.bindPopup("You are not within a district.").openPopup();
+			}
+			else {
+				L.marker(e.latlng).addTo(map)
+				.bindPopup("You are within " + layer[0].feature.properties.District).openPopup();
+			}
+		}
+
+		function onLocationError(e) {
+			alert(e.message);
+		}
+		$('.locator').click(function() {
+			map.locate({setView: true, maxZoom: 12});
+		});
+		map.on('locationfound', onLocationFound);
+		map.on('locationerror', onLocationError);
+
+	</script>
+</body>
